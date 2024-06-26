@@ -66,20 +66,20 @@ static int handle_keyboard_input(int fd) {
     return -1;
 }
 
-static void send_click(struct zwlr_virtual_pointer_v1 *virtual_pointer) {
-    zwlr_virtual_pointer_v1_button(virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
-    zwlr_virtual_pointer_v1_frame(virtual_pointer);
-    
-    zwlr_virtual_pointer_v1_button(virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
-    zwlr_virtual_pointer_v1_frame(virtual_pointer);
-}
-
 static void sleep_us(long us) {
     struct timespec ts = {
         .tv_sec = us / 1000000,
         .tv_nsec = (us % 1000000) * 1000
     };
     nanosleep(&ts, NULL);
+}
+
+static void send_click(struct zwlr_virtual_pointer_v1 *virtual_pointer) {
+    zwlr_virtual_pointer_v1_button(virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
+    zwlr_virtual_pointer_v1_frame(virtual_pointer);
+
+    zwlr_virtual_pointer_v1_button(virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
+    zwlr_virtual_pointer_v1_frame(virtual_pointer);
 }
 
 static int open_restricted(const char *path, int flags, void *user_data) {
