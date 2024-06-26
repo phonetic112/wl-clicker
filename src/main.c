@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +12,7 @@
 #include <time.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <libinput.h>
 #include "protocols/wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
 struct state {
@@ -81,16 +82,100 @@ static void sleep_us(long us) {
     nanosleep(&ts, NULL);
 }
 
+static int open_restricted(const char *path, int flags, void *user_data) {
+    int fd = open(path, flags);
+    return fd < 0 ? -1 : fd;
+}
+
+static void close_restricted(int fd, void *user_data) {
+    close(fd);
+}
+
+const static struct libinput_interface interface = {
+    .open_restricted = open_restricted,
+    .close_restricted = close_restricted,
+};
+
+char* get_keyboard_device() {
+    struct udev *udev = NULL;
+    struct libinput *li = NULL;
+    char* keyboard_device = NULL;
+    bool device_found = false;
+
+    udev = udev_new();
+    if (!udev) {
+        fprintf(stderr, "Failed to create udev context\n");
+        return NULL;
+    }
+
+    li = libinput_udev_create_context(&interface, NULL, udev);
+    if (!li) {
+        fprintf(stderr, "Failed to create libinput context\n");
+        udev_unref(udev);
+        return NULL;
+    }
+
+    if (libinput_udev_assign_seat(li, "seat0") != 0) {
+        fprintf(stderr, "Failed to assign seat\n");
+        libinput_unref(li);
+        udev_unref(udev);
+        return NULL;
+    }
+
+    struct pollfd fds;
+    fds.fd = libinput_get_fd(li);
+    fds.events = POLLIN;
+    fds.revents = 0;
+
+    int timeout_ms = 5000;
+    int ret;
+
+    while (!device_found && (ret = poll(&fds, 1, timeout_ms)) >= 0) {
+        if (ret == 0) {
+            printf("Timeout reached, no keyboard device found.\n");
+            break;
+        }
+
+        libinput_dispatch(li);
+        struct libinput_event *event;
+
+        while (!device_found && (event = libinput_get_event(li)) != NULL) {
+            struct libinput_device *device = libinput_event_get_device(event);
+            if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_KEYBOARD) && strstr(libinput_device_get_name(device), "Keyboard")) {
+                const char *devnode = libinput_device_get_sysname(device);
+                printf("Found keyboard device: /dev/input/%s\n", devnode);
+                keyboard_device = malloc(strlen("/dev/input/") + strlen(devnode) + 1);
+                sprintf(keyboard_device, "/dev/input/%s", devnode);
+                device_found = true;
+            }
+            libinput_event_destroy(event);
+        }
+    }
+
+    if (ret < 0) {
+        perror("poll");
+    }
+
+    if (li) libinput_unref(li);
+    if (udev) udev_unref(udev);
+    return keyboard_device;
+}
+
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <clicks_per_second> <keyboard_device>\n", argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <clicks_per_second>\n", argv[0]);
         return 1;
     }
 
     struct state state = {0};
     int clicks_per_second = atoi(argv[1]);
     state.click_interval_us = 1000000 / clicks_per_second;
-    const char *kbd_device = argv[2];
+
+    char *kbd_device = get_keyboard_device();
+    if (!kbd_device) {
+        fprintf(stderr, "Failed to find keyboard device\n");
+        return 1;
+    }
 
     state.display = wl_display_connect(NULL);
     if (!state.display) {
@@ -162,6 +247,7 @@ int main(int argc, char *argv[]) {
     zwlr_virtual_pointer_manager_v1_destroy(state.pointer_manager);
     wl_registry_destroy(state.registry);
     wl_display_disconnect(state.display);
+    free(kbd_device);
 
     return 0;
 }
