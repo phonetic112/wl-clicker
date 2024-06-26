@@ -12,7 +12,7 @@
 #include <time.h>
 #include <errno.h>
 #include <stdbool.h>
-#include "wlr-virtual-pointer-unstable-v1-client-protocol.h"
+#include "protocols/wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
 struct state {
     struct wl_display *display;
