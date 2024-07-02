@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <libinput.h>
-#include "protocols/wlr-virtual-pointer-unstable-v1-client-protocol.h"
+#include "../build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
 struct state {
 	struct wl_display *display;
