@@ -100,19 +100,19 @@ const char* get_keyboard_device() {
 
     udev = udev_new();
     if (!udev) {
-        fprintf(stderr, "Failed to create udev context\n");
+        fprintf(stderr, "Error: failed to create udev context\n");
         return NULL;
     }
 
     li = libinput_udev_create_context(&interface, NULL, udev);
     if (!li) {
-        fprintf(stderr, "Failed to create libinput context\n");
+        fprintf(stderr, "Error: failed to create libinput context\n");
         udev_unref(udev);
         return NULL;
     }
 
     if (libinput_udev_assign_seat(li, "seat0") != 0) {
-        fprintf(stderr, "Failed to assign seat\n");
+        fprintf(stderr, "Error: failed to assign seat\n");
         libinput_unref(li);
         udev_unref(udev);
         return NULL;
@@ -169,13 +169,13 @@ int main(int argc, char *argv[]) {
 
     const char *kbd_device = get_keyboard_device();
     if (!kbd_device) {
-        fprintf(stderr, "Failed to find keyboard device\n");
+        fprintf(stderr, "Error: failed to find keyboard device\n");
         return 1;
     }
 
     state.display = wl_display_connect(NULL);
     if (!state.display) {
-        fprintf(stderr, "Failed to connect to Wayland display\n");
+        fprintf(stderr, "Error: failed to connect to Wayland display\n");
         return 1;
     }
 
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
     wl_display_roundtrip(state.display);
 
     if (!state.pointer_manager) {
-        fprintf(stderr, "Compositor doesn't support wlr-virtual-pointer-unstable-v1\n");
+        fprintf(stderr, "Error: compositor doesn't support wlr-virtual-pointer-unstable-v1\n");
         return 1;
     }
 
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
 
     int kbd_fd = open(kbd_device, O_RDONLY);
     if (kbd_fd == -1) {
-        perror("Failed to open keyboard device");
+        perror("Error: failed to open keyboard device");
         return 1;
     }
 
