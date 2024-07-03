@@ -15,17 +15,17 @@
 #include <libinput.h>
 #include "../build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
-struct state {
+typedef struct {
     struct wl_display *display;
     struct wl_registry *registry;
     struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
     struct zwlr_virtual_pointer_v1 *virtual_pointer;
     int click_interval_us;
     bool f8_pressed;
-};
+} state;
 
 static void registry_global(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
-    struct state *state = data;
+    state *state = data;
 
     if (strcmp(interface, zwlr_virtual_pointer_manager_v1_interface.name) == 0)
         state->pointer_manager = wl_registry_bind(registry, name, &zwlr_virtual_pointer_manager_v1_interface, 1);
@@ -68,7 +68,7 @@ static void sleep_us(long us) {
     nanosleep(&ts, NULL);
 }
 
-static void send_click(struct state *state) {
+static void send_click(state *state) {
     zwlr_virtual_pointer_v1_button(state->virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
     zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
     wl_display_flush(state->display);
@@ -93,18 +93,13 @@ const static struct libinput_interface interface = {
 };
 
 const char* get_keyboard_device() {
-    struct udev *udev = NULL;
-    struct libinput *li = NULL;
-    static char keyboard_device[256];
-    bool device_found = false;
-
-    udev = udev_new();
+    struct udev *udev = udev_new();
     if (!udev) {
         fprintf(stderr, "Error: failed to create udev context\n");
         return NULL;
     }
 
-    li = libinput_udev_create_context(&interface, NULL, udev);
+    struct libinput *li = libinput_udev_create_context(&interface, NULL, udev);
     if (!li) {
         fprintf(stderr, "Error: failed to create libinput context\n");
         udev_unref(udev);
@@ -118,17 +113,23 @@ const char* get_keyboard_device() {
         return NULL;
     }
 
-    struct pollfd fds;
-    fds.fd = libinput_get_fd(li);
-    fds.events = POLLIN;
-    fds.revents = 0;
+    struct pollfd fds = {
+        .fd = libinput_get_fd(li),
+        .events = POLLIN
+    };
 
     int timeout_ms = 5000;
-    int ret;
+    bool device_found = false;
+    static char keyboard_device[256];
 
-    while (!device_found && (ret = poll(&fds, 1, timeout_ms)) >= 0) {
+    while (!device_found) {
+        int ret = poll(&fds, 1, timeout_ms);
         if (ret == 0) {
             printf("Timeout reached, no keyboard device found.\n");
+            break;
+        }
+        if (ret < 0) {
+            perror("poll");
             break;
         }
 
@@ -147,10 +148,6 @@ const char* get_keyboard_device() {
         }
     }
 
-    if (ret < 0) {
-        perror("poll");
-    }
-
     if (li) libinput_unref(li);
     if (udev) udev_unref(udev);
     
@@ -163,7 +160,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    struct state state = {0};
+    state state = {0};
     int clicks_per_second = atoi(argv[1]);
     state.click_interval_us = 1000000 / clicks_per_second;
 
@@ -207,31 +204,35 @@ int main(int argc, char *argv[]) {
     struct timespec last_click_time, current_time;
     clock_gettime(CLOCK_MONOTONIC, &last_click_time);
 
+    printf("Ready\n");
+
     while (1) {
-        if (poll(fds, 2, 0) > 0) {
-            if (fds[0].revents & POLLIN) {
-                if (wl_display_dispatch(state.display) == -1) {
-                    break;
-                }
+        int poll_timeout = state.f8_pressed ? state.click_interval_us / 1000 : -1;
+        int ret = poll(fds, 2, poll_timeout);
+        if (ret < 0) {
+            perror("poll");
+            break;
+        }
+
+        if (fds[0].revents & POLLIN) {
+            if (wl_display_dispatch(state.display) == -1) {
+                break;
             }
-            if (fds[1].revents & POLLIN) {
-                int key_state = handle_keyboard_input(kbd_fd);
-                if (key_state != -1) {
-                    state.f8_pressed = key_state;
-                }
+        }
+        if (fds[1].revents & POLLIN) {
+            int key_state = handle_keyboard_input(kbd_fd);
+            if (key_state != -1) {
+                state.f8_pressed = key_state;
             }
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        long time_diff_us = (current_time.tv_sec - last_click_time.tv_sec) * 1000000 + (current_time.tv_nsec - last_click_time.tv_nsec) / 1000;
+        if (state.f8_pressed) {
+            clock_gettime(CLOCK_MONOTONIC, &current_time);
+            long time_diff_us = (current_time.tv_sec - last_click_time.tv_sec) * 1000000 + (current_time.tv_nsec - last_click_time.tv_nsec) / 1000;
 
-        if (state.f8_pressed && time_diff_us >= state.click_interval_us) {
-            send_click(&state);
-            last_click_time = current_time;
-
-            long sleep_time = state.click_interval_us - 1000;
-            if (sleep_time > 0) {
-                sleep_us(sleep_time);
+            if (time_diff_us >= state.click_interval_us) {
+                send_click(&state);
+                last_click_time = current_time;
             }
         }
     }
