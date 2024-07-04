@@ -67,8 +67,10 @@ int main(int argc, char *argv[]) {
 
     printf("Ready\n");
 
+    const int click_interval_ms = state.click_interval_us / 1000;
+
     while (1) {
-        int poll_timeout = state.key_pressed ? state.click_interval_us / 1000 : -1;
+        int poll_timeout = state.key_pressed ? click_interval_ms : -1;
         int ret = poll(fds, 2, poll_timeout);
         if (ret < 0) {
             perror("poll");
