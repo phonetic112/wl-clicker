@@ -1,20 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
-#include <stdio.h>
+
 #include <stdlib.h>
-#include <string.h>
-#include <wayland-client.h>
 #include <wayland-client-protocol.h>
-#include <linux/input-event-codes.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <time.h>
-#include <errno.h>
-#include <stdbool.h>
-#include "wayland.h"
-#include "input.h"
-#include "../build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
+#include <wayland.h>
+#include <input.h>
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

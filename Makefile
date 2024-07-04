@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lwayland-client -linput -ludev -lrt
+CFLAGS = -lwayland-client -linput -ludev -lrt -I./include
 BINARY = ./build/wl-clicker
 SOURCES = ./src/main.c ./src/wayland.c ./src/input.c ./build/wlr-virtual-pointer-unstable-v1-protocol.c
 
