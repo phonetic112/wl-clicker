@@ -21,11 +21,11 @@ typedef struct {
     struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
     struct zwlr_virtual_pointer_v1 *virtual_pointer;
     int click_interval_us;
-    bool f8_pressed;
-} state;
+    bool key_pressed;
+} client_state;
 
 static void registry_global(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
-    state *state = data;
+    client_state *state = data;
 
     if (strcmp(interface, zwlr_virtual_pointer_manager_v1_interface.name) == 0)
         state->pointer_manager = wl_registry_bind(registry, name, &zwlr_virtual_pointer_manager_v1_interface, 1);
@@ -68,7 +68,7 @@ static void sleep_us(long us) {
     nanosleep(&ts, NULL);
 }
 
-static void send_click(state *state) {
+static void send_click(client_state *state) {
     zwlr_virtual_pointer_v1_button(state->virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
     zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
     wl_display_flush(state->display);
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    state state = {0};
+    client_state state = {0};
     int clicks_per_second = atoi(argv[1]);
     state.click_interval_us = 1000000 / clicks_per_second;
 
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     printf("Ready\n");
 
     while (1) {
-        int poll_timeout = state.f8_pressed ? state.click_interval_us / 1000 : -1;
+        int poll_timeout = state.key_pressed ? state.click_interval_us / 1000 : -1;
         int ret = poll(fds, 2, poll_timeout);
         if (ret < 0) {
             perror("poll");
@@ -222,11 +222,11 @@ int main(int argc, char *argv[]) {
         if (fds[1].revents & POLLIN) {
             int key_state = handle_keyboard_input(kbd_fd);
             if (key_state != -1) {
-                state.f8_pressed = key_state;
+                state.key_pressed = key_state;
             }
         }
 
-        if (state.f8_pressed) {
+        if (state.key_pressed) {
             clock_gettime(CLOCK_MONOTONIC, &current_time);
             long time_diff_us = (current_time.tv_sec - last_click_time.tv_sec) * 1000000 + (current_time.tv_nsec - last_click_time.tv_nsec) / 1000;
 
