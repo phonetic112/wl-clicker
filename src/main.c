@@ -67,11 +67,8 @@ int main(int argc, char *argv[]) {
 
     printf("Ready\n");
 
-    const int click_interval_ms = state.click_interval_us / 1000;
-
     while (1) {
-        int poll_timeout = state.key_pressed ? click_interval_ms : -1;
-        int ret = poll(fds, 2, poll_timeout);
+        int ret = poll(fds, 2, state.key_pressed ? 0: -1);
         if (ret < 0) {
             perror("poll");
             break;
@@ -84,16 +81,14 @@ int main(int argc, char *argv[]) {
         }
         if (fds[1].revents & POLLIN) {
             int key_state = handle_keyboard_input(kbd_fd);
-            if (key_state != -1) {
+            if (key_state != -1)
                 state.key_pressed = key_state;
-            }
         }
 
         if (state.key_pressed) {
             clock_gettime(CLOCK_MONOTONIC, &current_time);
-            long time_diff_us = (current_time.tv_sec - last_click_time.tv_sec) * 1000000 + (current_time.tv_nsec - last_click_time.tv_nsec) / 1000;
 
-            if (time_diff_us >= state.click_interval_us) {
+            if (((current_time.tv_sec - last_click_time.tv_sec) * 1000000 + (current_time.tv_nsec - last_click_time.tv_nsec) / 1000) >= state.click_interval_us) {
                 send_click(&state);
                 last_click_time = current_time;
             }

@@ -5,12 +5,10 @@ int handle_keyboard_input(int fd) {
     ssize_t n = read(fd, &ev, sizeof(ev));
 
     if (n == sizeof(ev)) {
-        if (ev.type == EV_KEY && ev.code == KEY_F8) {
+        if (ev.type == EV_KEY && ev.code == KEY_F8)
             return ev.value;  // 1 for press, 0 for release
-        }
-    } else if (n == -1 && errno != EAGAIN) {
+    } else if (n == -1 && errno != EAGAIN)
         perror("read");
-    }
 
     return -1;
 }
