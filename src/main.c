@@ -5,154 +5,15 @@
 #include <wayland-client.h>
 #include <wayland-client-protocol.h>
 #include <linux/input-event-codes.h>
-#include <linux/input.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <time.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <libinput.h>
+#include "wayland.h"
+#include "input.h"
 #include "../build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
-
-typedef struct {
-    struct wl_display *display;
-    struct wl_registry *registry;
-    struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
-    struct zwlr_virtual_pointer_v1 *virtual_pointer;
-    int click_interval_us;
-    bool key_pressed;
-} client_state;
-
-static void registry_global(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
-    client_state *state = data;
-
-    if (strcmp(interface, zwlr_virtual_pointer_manager_v1_interface.name) == 0)
-        state->pointer_manager = wl_registry_bind(registry, name, &zwlr_virtual_pointer_manager_v1_interface, 1);
-}
-
-static void registry_global_remove(void *data, struct wl_registry *registry, uint32_t name) {}
-
-static const struct wl_registry_listener registry_listener = {
-    .global = registry_global,
-    .global_remove = registry_global_remove,
-};
-
-static int timestamp() {
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-    int ms = 1000 * tp.tv_sec + tp.tv_nsec / 1000000;
-    return ms;
-}
-
-static int handle_keyboard_input(int fd) {
-    struct input_event ev;
-    ssize_t n = read(fd, &ev, sizeof(ev));
-
-    if (n == sizeof(ev)) {
-        if (ev.type == EV_KEY && ev.code == KEY_F8) {
-            return ev.value;  // 1 for press, 0 for release
-        }
-    } else if (n == -1 && errno != EAGAIN) {
-        perror("read");
-    }
-
-    return -1;
-}
-
-static void sleep_us(long us) {
-    struct timespec ts = {
-        .tv_sec = us / 1000000,
-        .tv_nsec = (us % 1000000) * 1000
-    };
-    nanosleep(&ts, NULL);
-}
-
-static void send_click(client_state *state) {
-    zwlr_virtual_pointer_v1_button(state->virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
-    zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
-    wl_display_flush(state->display);
-
-    zwlr_virtual_pointer_v1_button(state->virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
-    zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
-    wl_display_flush(state->display);
-}
-
-static int open_restricted(const char *path, int flags, void *user_data) {
-    int fd = open(path, flags);
-    return fd < 0 ? -1 : fd;
-}
-
-static void close_restricted(int fd, void *user_data) {
-    close(fd);
-}
-
-const static struct libinput_interface interface = {
-    .open_restricted = open_restricted,
-    .close_restricted = close_restricted,
-};
-
-const char* get_keyboard_device() {
-    struct udev *udev = udev_new();
-    if (!udev) {
-        fprintf(stderr, "Error: failed to create udev context\n");
-        return NULL;
-    }
-
-    struct libinput *li = libinput_udev_create_context(&interface, NULL, udev);
-    if (!li) {
-        fprintf(stderr, "Error: failed to create libinput context\n");
-        udev_unref(udev);
-        return NULL;
-    }
-
-    if (libinput_udev_assign_seat(li, "seat0") != 0) {
-        fprintf(stderr, "Error: failed to assign seat\n");
-        libinput_unref(li);
-        udev_unref(udev);
-        return NULL;
-    }
-
-    struct pollfd fds = {
-        .fd = libinput_get_fd(li),
-        .events = POLLIN
-    };
-
-    int timeout_ms = 5000;
-    bool device_found = false;
-    static char keyboard_device[256];
-
-    while (!device_found) {
-        int ret = poll(&fds, 1, timeout_ms);
-        if (ret == 0) {
-            printf("Timeout reached, no keyboard device found.\n");
-            break;
-        }
-        if (ret < 0) {
-            perror("poll");
-            break;
-        }
-
-        libinput_dispatch(li);
-        struct libinput_event *event;
-
-        while (!device_found && (event = libinput_get_event(li)) != NULL) {
-            struct libinput_device *device = libinput_event_get_device(event);
-            if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_KEYBOARD) && strstr(libinput_device_get_name(device), "Keyboard")) {
-                const char *devnode = libinput_device_get_sysname(device);
-                printf("Found keyboard device: /dev/input/%s\n", devnode);
-                snprintf(keyboard_device, sizeof(keyboard_device), "/dev/input/%s", devnode);
-                device_found = true;
-            }
-            libinput_event_destroy(event);
-        }
-    }
-
-    if (li) libinput_unref(li);
-    if (udev) udev_unref(udev);
-    
-    return device_found ? keyboard_device : NULL;
-}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
