@@ -1,8 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
 
-#include <stdlib.h>
-#include <wayland-client-protocol.h>
 #include <wayland.h>
 #include <input.h>
 

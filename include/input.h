@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <poll.h>
 #include <stdbool.h>
-#include "string.h"
+#include <string.h>
 #include <unistd.h>
 #include <linux/input-event-codes.h>
 #include <linux/input.h>
