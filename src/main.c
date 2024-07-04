@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,9 +69,26 @@ int main(int argc, char *argv[]) {
     printf("Ready\n");
 
     while (1) {
-        int ret = poll(fds, 2, state.key_pressed ? 0: -1);
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        double time_since_last_click =
+            (current_time.tv_sec - last_click_time.tv_sec) * 1000000.0 +
+            (current_time.tv_nsec - last_click_time.tv_nsec) / 1000.0;
+
+        struct timespec timeout = {0, 0};
+        if (state.key_pressed) {
+            double wait_time = state.click_interval_us - time_since_last_click;
+            if (wait_time > 0) {
+                timeout.tv_sec = (time_t)(wait_time / 1000000.0);
+                timeout.tv_nsec = (long)((wait_time - (timeout.tv_sec * 1000000.0)) * 1000.0);
+            }
+        } else {
+            timeout.tv_sec = 1;
+        }
+
+        int ret = ppoll(fds, 2, state.key_pressed ? &timeout : NULL, NULL);
         if (ret < 0) {
-            perror("poll");
+            if (errno == EINTR) continue;
+            perror("ppoll");
             break;
         }
 
@@ -85,13 +103,14 @@ int main(int argc, char *argv[]) {
                 state.key_pressed = key_state;
         }
 
-        if (state.key_pressed) {
-            clock_gettime(CLOCK_MONOTONIC, &current_time);
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        time_since_last_click =
+            (current_time.tv_sec - last_click_time.tv_sec) * 1000000.0 +
+            (current_time.tv_nsec - last_click_time.tv_nsec) / 1000.0;
 
-            if (((current_time.tv_sec - last_click_time.tv_sec) * 1000000 + (current_time.tv_nsec - last_click_time.tv_nsec) / 1000) >= state.click_interval_us) {
-                send_click(&state);
-                last_click_time = current_time;
-            }
+        if (state.key_pressed && time_since_last_click >= state.click_interval_us) {
+            send_click(&state);
+            last_click_time = current_time;
         }
     }
 
