@@ -1,3 +1,6 @@
+#ifndef WAYLAND_H
+#define WAYLAND_H
+
 #include <stdbool.h>
 #include <string.h>
 #include <linux/input-event-codes.h>
@@ -5,7 +8,7 @@
 #include <wayland-client.h>
 #include "../build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
-typedef struct {
+typedef struct state {
     struct wl_display *display;
     struct wl_registry *registry;
     struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
@@ -18,3 +21,5 @@ void registry_global(void *data, struct wl_registry *registry, uint32_t name, co
 void registry_global_remove(void *data, struct wl_registry *registry, uint32_t name);
 void send_click(client_state *state);
 extern const struct wl_registry_listener registry_listener;
+
+#endif /* WAYLAND_H */

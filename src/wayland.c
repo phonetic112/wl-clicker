@@ -1,5 +1,4 @@
 #include "wayland.h"
-#include <time.h>
 
 void registry_global(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
     client_state *state = data;

@@ -1,3 +1,6 @@
+#ifndef INPUT_H
+#define INPUT_H
+
 #include <stdio.h>
 #include <poll.h>
 #include <stdbool.h>
@@ -11,3 +14,5 @@
 
 int handle_keyboard_input(int fd);
 const char* get_keyboard_device();
+
+#endif /* INPUT_H */
