@@ -13,13 +13,13 @@ int main(int argc, char *argv[]) {
 
     const char *kbd_device = get_keyboard_device();
     if (!kbd_device) {
-        fprintf(stderr, "Error: failed to find keyboard device\n");
+        fprintf(stderr, "Error: failed to find keyboard device.\n");
         return 1;
     }
 
     state.display = wl_display_connect(NULL);
     if (!state.display) {
-        fprintf(stderr, "Error: failed to connect to Wayland display\n");
+        fprintf(stderr, "Error: failed to connect to Wayland display.\n");
         return 1;
     }
 
@@ -28,15 +28,16 @@ int main(int argc, char *argv[]) {
     wl_display_roundtrip(state.display);
 
     if (!state.pointer_manager) {
-        fprintf(stderr, "Error: compositor doesn't support wlr-virtual-pointer-unstable-v1\n");
+        fprintf(stderr, "Error: your compositor does not support wlr-virtual-pointer.\n");
         return 1;
     }
 
-    state.virtual_pointer = zwlr_virtual_pointer_manager_v1_create_virtual_pointer(state.pointer_manager, NULL);
+    state.virtual_pointer =
+        zwlr_virtual_pointer_manager_v1_create_virtual_pointer(state.pointer_manager, NULL);
 
     int kbd_fd = open(kbd_device, O_RDONLY);
     if (kbd_fd == -1) {
-        perror("Error: failed to open keyboard device");
+        perror("Error: failed to open keyboard device.");
         return 1;
     }
 
@@ -78,9 +79,8 @@ int main(int argc, char *argv[]) {
         }
 
         if (fds[0].revents & POLLIN) {
-            if (wl_display_dispatch(state.display) == -1) {
+            if (wl_display_dispatch(state.display) == -1)
                 break;
-            }
         }
         if (fds[1].revents & POLLIN) {
             int key_state = handle_keyboard_input(kbd_fd);
