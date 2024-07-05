@@ -1,5 +1,5 @@
-#include <wayland.h>
-#include <input.h>
+#include <src/wayland.h>
+#include <src/input.h>
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

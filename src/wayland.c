@@ -1,4 +1,4 @@
-#include <wayland.h>
+#include <src/wayland.h>
 
 void registry_global(void *data, struct wl_registry *registry,
         uint32_t name, const char *interface, uint32_t version) {

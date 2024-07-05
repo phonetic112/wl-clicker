@@ -1,4 +1,4 @@
-#include <input.h>
+#include <src/input.h>
 
 int handle_keyboard_input(int fd) {
     struct input_event ev;
