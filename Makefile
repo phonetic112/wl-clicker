@@ -6,21 +6,22 @@ SOURCES = ./src/main.c \
 	./src/input.c \
 	./build/wlr-virtual-pointer-unstable-v1-protocol.c
 PROTOCOL = /usr/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml
+PROTOCOL_C = ./build/wlr-virtual-pointer-unstable-v1-protocol.c
+PROTOCOL_H = ./build/wlr-virtual-pointer-unstable-v1-client-protocol.h
 
 all: $(BINARY)
 
 debug: CFLAGS += -g
 debug: $(BINARY)
 
-$(BINARY):
+$(BINARY): $(SOURCES) $(PROTOCOL_C) $(PROTOCOL_H)
 	mkdir -p ./build
-	wayland-scanner client-header \
-		$(PROTOCOL) \
-		./build/wlr-virtual-pointer-unstable-v1-client-protocol.h
-	wayland-scanner private-code \
-		$(PROTOCOL) \
-		./build/wlr-virtual-pointer-unstable-v1-protocol.c
 	$(CC) $(CFLAGS) -o $@ $(SOURCES)
+
+$(PROTOCOL_C) $(PROTOCOL_H): $(PROTOCOL)
+	mkdir -p ./build
+	wayland-scanner client-header $(PROTOCOL) $(PROTOCOL_H)
+	wayland-scanner private-code $(PROTOCOL) $(PROTOCOL_C)
 
 clear:
 	rm -r ./build

@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
     }
 
     client_state state = {0};
-    int clicks_per_second = atoi(argv[1]);
+    unsigned int clicks_per_second = abs(atoi(argv[1]));
     state.click_interval_us = 1000000 / clicks_per_second;
 
     const char *kbd_device = get_keyboard_device();
