@@ -17,9 +17,6 @@ typedef struct state {
     bool key_pressed;
 } client_state;
 
-void registry_global(void *data, struct wl_registry *registry,
-    uint32_t name, const char *interface, uint32_t version);
-void registry_global_remove(void *data, struct wl_registry *registry, uint32_t name);
 void send_click(client_state *state);
 extern const struct wl_registry_listener registry_listener;
 
