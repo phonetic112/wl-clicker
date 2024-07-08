@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lwayland-client -linput -ludev -lrt -I./include -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+CFLAGS = -lwayland-client -I./include -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
 BINARY = ./build/wl-clicker
 SOURCES = ./src/main.c \
 	./src/wayland.c \
