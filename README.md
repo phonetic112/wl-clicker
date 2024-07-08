@@ -7,7 +7,7 @@ An autoclicker for Wayland compositors that support the [wlr-virtual-pointer](ht
 Ensure the dependencies are installed:
 
 ```sh
-sudo pacman -S wayland libinput linux-api-headers wlr-protocols
+sudo pacman -S wayland linux-api-headers wlr-protocols
 ```
 
 Compile with `make`.

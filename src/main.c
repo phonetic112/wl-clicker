@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     int kbd_fd = open(kbd_device, O_RDONLY);
     if (kbd_fd == -1) {
-        perror("Error: failed to open keyboard device.");
+        perror("Error: failed to open keyboard device");
         return 1;
     }
 
