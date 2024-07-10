@@ -3,9 +3,9 @@
 #include <getopt.h>
 
 static const struct option long_options[] = {
-	{"toggle", no_argument, NULL, 't'},
+    {"toggle", no_argument, NULL, 't'},
     {"help", no_argument, NULL, 'h'},
-	{0, 0, 0, 0}
+    {0, 0, 0, 0}
 };
 
 static const char usage[] =
