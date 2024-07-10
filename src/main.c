@@ -20,23 +20,23 @@ int main(int argc, char *argv[]) {
     bool toggle_key = false;
     int c;
     while (1) {
-		int option_index = 0;
-		c = getopt_long(argc, argv, "th", long_options, &option_index);
-		if (c == -1)
-			break;
-		switch (c) {
-		case 'h': // help
-			printf("%s", usage);
-			exit(EXIT_SUCCESS);
-			break;
+        int option_index = 0;
+        c = getopt_long(argc, argv, "th", long_options, &option_index);
+        if (c == -1)
+            break;
+        switch (c) {
+        case 'h': // help
+            printf("%s", usage);
+            exit(EXIT_SUCCESS);
+            break;
         case 't': // toggle
             toggle_key = true;
             break;
-		default:
-			fprintf(stderr, "%s", usage);
-			exit(EXIT_FAILURE);
-		}
-	}
+        default:
+            fprintf(stderr, "%s", usage);
+            exit(EXIT_FAILURE);
+        }
+    }
 
     if (optind < argc)
         clicks_per_second = abs(atoi(argv[optind]));
