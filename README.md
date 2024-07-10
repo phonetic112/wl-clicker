@@ -27,7 +27,9 @@ sudo usermod -aG input [user]
 ## Usage
 
 ```sh
-wl-clicker [clicks-per-second]
+wl-clicker [clicks-per-second] [options]
 ```
+
+Use `wl-clicker -h` to see options.
 
 Then, hold down F8 to start clicking.
