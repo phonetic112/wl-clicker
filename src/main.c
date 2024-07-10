@@ -1,14 +1,48 @@
 #include <src/wayland.h>
 #include <src/input.h>
+#include <getopt.h>
+
+static const struct option long_options[] = {
+	{"toggle", no_argument, NULL, 't'},
+    {"help", no_argument, NULL, 'h'},
+	{0, 0, 0, 0}
+};
+
+static const char usage[] =
+    "Usage: wl-clicker [clicks-per-second] [options]\n"
+    "\n"
+    "  -t, --toggle     Toggle the autoclicker on keypress\n"
+    "  -h, --help       Show this menu\n"
+    "\n";
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <clicks_per_second>\n", argv[0]);
-        return 1;
-    }
+    unsigned int clicks_per_second = 1;
+    bool toggle_key = false;
+    int c;
+    while (1) {
+		int option_index = 0;
+		c = getopt_long(argc, argv, "th", long_options, &option_index);
+		if (c == -1)
+			break;
+		switch (c) {
+		case 'h': // help
+			printf("%s", usage);
+			exit(EXIT_SUCCESS);
+			break;
+        case 't': // toggle
+            toggle_key = true;
+            break;
+		default:
+			fprintf(stderr, "%s", usage);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+    if (optind < argc)
+        clicks_per_second = abs(atoi(argv[optind]));
 
     client_state state = {0};
-    unsigned int clicks_per_second = abs(atoi(argv[1]));
+
     state.click_interval_us = 1000000 / clicks_per_second;
 
     const char *kbd_device = get_keyboard_device();
@@ -84,8 +118,13 @@ int main(int argc, char *argv[]) {
         }
         if (fds[1].revents & POLLIN) {
             int key_state = handle_keyboard_input(kbd_fd);
-            if (key_state != -1)
-                state.key_pressed = key_state;
+            if (key_state != -1) {
+                if (toggle_key) {
+                    if (key_state == 1)
+                        state.key_pressed = !state.key_pressed;
+                } else
+                    state.key_pressed = key_state;
+            }
         }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
