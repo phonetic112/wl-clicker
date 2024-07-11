@@ -1,6 +1,9 @@
 #include <src/wayland.h>
 #include <src/input.h>
 #include <getopt.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static const struct option long_options[] = {
     {"toggle", no_argument, NULL, 't'},
