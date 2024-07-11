@@ -24,14 +24,28 @@ static int timestamp() {
     return ms;
 }
 
-void send_click(client_state *state) {
+void send_click(client_state *state, int button) {
+    switch (button) {
+        case 0:
+            button = BTN_LEFT;
+            break;
+        case 1:
+            button = BTN_RIGHT;
+            break;
+        case 2:
+            button = BTN_MIDDLE;
+            break;
+        default:
+            button = BTN_LEFT;
+            break;
+    }
     zwlr_virtual_pointer_v1_button(
-        state->virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
+        state->virtual_pointer, timestamp(), button, WL_POINTER_BUTTON_STATE_PRESSED);
     zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
     wl_display_flush(state->display);
 
     zwlr_virtual_pointer_v1_button(
-        state->virtual_pointer, timestamp(), BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
+        state->virtual_pointer, timestamp(), button, WL_POINTER_BUTTON_STATE_RELEASED);
     zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
     wl_display_flush(state->display);
 }

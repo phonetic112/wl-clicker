@@ -17,7 +17,7 @@ typedef struct state {
     bool key_pressed;
 } client_state;
 
-void send_click(client_state *state);
+void send_click(client_state *state, int button);
 extern const struct wl_registry_listener registry_listener;
 
 #endif /* WAYLAND_H */

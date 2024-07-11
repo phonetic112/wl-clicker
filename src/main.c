@@ -5,36 +5,44 @@
 static const struct option long_options[] = {
     {"toggle", no_argument, NULL, 't'},
     {"help", no_argument, NULL, 'h'},
+    {"button", required_argument, NULL, 'b'},
     {0, 0, 0, 0}
 };
 
 static const char usage[] =
     "Usage: wl-clicker [clicks-per-second] [options]\n"
     "\n"
-    "  -t, --toggle     Toggle the autoclicker on keypress\n"
-    "  -h, --help       Show this menu\n"
+    "  -b  --button <0|1|2>    Specify which mouse button to click (0 for left, 1 for right, 2 for middle)\n"
+    "  -t, --toggle            Toggle the autoclicker on keypress\n"
+    "  -h, --help              Show this menu\n"
     "\n";
 
 int main(int argc, char *argv[]) {
     unsigned int clicks_per_second = 1;
     bool toggle_key = false;
+    int button_to_press = 0;
+
     int c;
     while (1) {
         int option_index = 0;
-        c = getopt_long(argc, argv, "th", long_options, &option_index);
+        c = getopt_long(argc, argv, "th:b:", long_options, &option_index);
         if (c == -1)
             break;
         switch (c) {
-        case 'h': // help
-            printf("%s", usage);
-            exit(EXIT_SUCCESS);
-            break;
-        case 't': // toggle
-            toggle_key = true;
-            break;
-        default:
-            fprintf(stderr, "%s", usage);
-            exit(EXIT_FAILURE);
+            case 'h': // help
+                printf("%s", usage);
+                exit(EXIT_SUCCESS);
+                break;
+            case 't': // toggle
+                toggle_key = true;
+                break;
+            case 'b':
+                button_to_press = atoi(optarg);
+                break;
+            default:
+                fprintf(stderr, "%s", usage);
+                exit(EXIT_FAILURE);
+                break;
         }
     }
 
@@ -133,7 +141,7 @@ int main(int argc, char *argv[]) {
             (current_time.tv_nsec - last_click_time.tv_nsec) / 1000.0;
 
         if (state.key_pressed && time_since_last_click >= state.click_interval_us) {
-            send_click(&state);
+            send_click(&state, button_to_press);
             last_click_time = current_time;
         }
     }
