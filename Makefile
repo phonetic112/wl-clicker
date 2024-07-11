@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -lwayland-client -I./include -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+CFLAGS = -lwayland-client -I./include -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE -mshstk
+LDFLAGS = -Wl,-z,relro,-z,now -Wl,-z,shstk
 BINARY = ./build/wl-clicker
 SOURCES = ./src/main.c \
 	./src/wayland.c \
@@ -16,7 +17,7 @@ debug: $(BINARY)
 
 $(BINARY): $(SOURCES) $(PROTOCOL_C) $(PROTOCOL_H)
 	mkdir -p ./build
-	$(CC) $(CFLAGS) -o $@ $(SOURCES)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(SOURCES)
 
 $(PROTOCOL_C) $(PROTOCOL_H): $(PROTOCOL)
 	mkdir -p ./build
