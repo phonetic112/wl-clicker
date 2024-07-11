@@ -24,6 +24,6 @@ $(PROTOCOL_C) $(PROTOCOL_H): $(PROTOCOL)
 	wayland-scanner private-code $(PROTOCOL) $(PROTOCOL_C)
 
 clear:
-	rm -r ./build
+	rm -rf ./build
 
 .PHONY: all debug clear
