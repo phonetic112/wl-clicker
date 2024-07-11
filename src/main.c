@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
             case 't': // toggle
                 toggle_key = true;
                 break;
-            case 'b':
+            case 'b': // button
                 button_to_press = atoi(optarg);
                 break;
             default:
