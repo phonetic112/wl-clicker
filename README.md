@@ -36,8 +36,10 @@ Use `wl-clicker -h` to see options.
 
 Then, hold down F8 to start clicking.
 
-The fastest I could go in Firefox was around 1800 cps:
+Note that actual click speed may be slightly lower than requested due to compositor/app limitations.
+
+## Gallery
+
+![image](https://github.com/user-attachments/assets/f61224b2-d98b-4135-8210-81a3c12bfb65)
 
 ![image](https://github.com/user-attachments/assets/fa7fe032-e69d-406e-962e-f67af8f227cb)
-
-Note that actual click speed may be slightly lower than requested due to compositor/app limitations.
