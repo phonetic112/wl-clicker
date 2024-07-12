@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 
     client_state state = {0};
 
-    state.click_interval_us = 1000000 / clicks_per_second;
+    state.click_interval_ns = 1e9 / clicks_per_second;
 
     const char *kbd_device = get_keyboard_device();
     if (!kbd_device) {
@@ -102,15 +102,15 @@ int main(int argc, char *argv[]) {
     while (1) {
         clock_gettime(CLOCK_MONOTONIC, &current_time);
         double time_since_last_click =
-            (current_time.tv_sec - last_click_time.tv_sec) * 1000000.0 +
-            (current_time.tv_nsec - last_click_time.tv_nsec) / 1000.0;
+            (current_time.tv_sec - last_click_time.tv_sec) * 1e9 +
+            (current_time.tv_nsec - last_click_time.tv_nsec);
 
         struct timespec timeout = {0, 0};
         if (state.key_pressed) {
-            double wait_time = state.click_interval_us - time_since_last_click;
+            double wait_time = state.click_interval_ns - time_since_last_click;
             if (wait_time > 0) {
-                timeout.tv_sec = (time_t)(wait_time / 1000000.0);
-                timeout.tv_nsec = (long)((wait_time - (timeout.tv_sec * 1000000.0)) * 1000.0);
+                timeout.tv_sec = (time_t)(wait_time / 1e9);
+                timeout.tv_nsec = (long)(wait_time - (timeout.tv_sec * 1e9));
             }
         } else {
             timeout.tv_sec = 1;
@@ -123,27 +123,22 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        if (fds[0].revents & POLLIN) {
-            if (wl_display_dispatch(state.display) == -1)
-                break;
-        }
+        if (fds[0].revents & POLLIN && wl_display_dispatch(state.display) == -1)
+            break;
+
         if (fds[1].revents & POLLIN) {
             int key_state = handle_keyboard_input(kbd_fd);
             if (key_state != -1) {
-                if (toggle_key) {
-                    if (key_state == 1)
-                        state.key_pressed = !state.key_pressed;
-                } else
-                    state.key_pressed = key_state;
+                state.key_pressed = toggle_key ? (key_state == 1 ? !state.key_pressed : state.key_pressed) : key_state;
             }
         }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
         time_since_last_click =
-            (current_time.tv_sec - last_click_time.tv_sec) * 1000000.0 +
-            (current_time.tv_nsec - last_click_time.tv_nsec) / 1000.0;
+            (current_time.tv_sec - last_click_time.tv_sec) * 1e9 +
+            (current_time.tv_nsec - last_click_time.tv_nsec);
 
-        if (state.key_pressed && time_since_last_click >= state.click_interval_us) {
+        if (state.key_pressed && time_since_last_click >= state.click_interval_ns) {
             send_click(&state, button_to_press);
             last_click_time = current_time;
         }

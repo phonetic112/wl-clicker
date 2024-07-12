@@ -8,12 +8,12 @@
 #include <wayland-client.h>
 #include "../build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
-typedef struct state {
+typedef struct client_state {
     struct wl_display *display;
     struct wl_registry *registry;
     struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
     struct zwlr_virtual_pointer_v1 *virtual_pointer;
-    int click_interval_us;
+    int click_interval_ns;
     bool key_pressed;
 } client_state;
 
