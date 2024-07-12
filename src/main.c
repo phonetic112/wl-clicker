@@ -94,10 +94,6 @@ int main(int argc, char *argv[]) {
     int flags = fcntl(kbd_fd, F_GETFL, 0);
     fcntl(kbd_fd, F_SETFL, flags | O_NONBLOCK);
 
-    struct pollfd fds[1] = {
-        {kbd_fd, POLLIN, 0}
-    };
-
     struct timespec last_click_time, current_time;
     const struct timespec sleep_time = {state.click_interval_ns / 1e9, state.click_interval_ns};
     clock_gettime(CLOCK_MONOTONIC, &last_click_time);
