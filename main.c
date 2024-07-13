@@ -119,10 +119,12 @@ static const struct option long_options[] = {
 static const char usage[] =
     "Usage: wl-clicker [clicks-per-second] [options]\n"
     "\n"
-    "  -b  --button <0|1|2>    Specify which mouse button to click (0 for left, 1 for right, 2 for middle)\n"
+    "  -b  --button <0|1|2>    Specify which mouse button to click\n"
+    "                          (0 for left, 1 for right, 2 for middle)\n"
     "  -t, --toggle            Toggle the autoclicker on keypress\n"
     "  -h, --help              Show this menu\n"
-    "  -n, --nosleep           Disables sleeping in the main loop for faster clicks. Note this will increase CPU usage massively.\n"
+    "  -n, --nosleep           Disables sleeping in the main loop for faster clicks.\n"
+    "                          Note this will increase CPU usage massively.\n"
     "\n";
 
 int main(int argc, char *argv[]) {
