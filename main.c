@@ -127,9 +127,9 @@ static const char usage[] =
 
 int main(int argc, char *argv[]) {
     unsigned int clicks_per_second = 1;
-    int button_to_press = 0;
-    bool toggle_key = false;
-    bool nosleep = false;
+    int button_type = 0;
+    bool toggle_click = false;
+    bool no_sleep = false;
 
     int c;
     while (1) {
@@ -143,13 +143,13 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_SUCCESS);
                 break;
             case 't': // toggle
-                toggle_key = true;
+                toggle_click = true;
                 break;
             case 'b': // button
-                button_to_press = atoi(optarg);
+                button_type = atoi(optarg);
                 break;
             case 'n': // nosleep
-                nosleep = true;
+                no_sleep = true;
                 break;
             default:
                 fprintf(stderr, "%s", usage);
@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
 
         int key_state = handle_keyboard_input(kbd_fd);
         if (key_state != -1) {
-            state.key_pressed = toggle_key ? (key_state == 1 ? !state.key_pressed : state.key_pressed) : key_state;
+            state.key_pressed = toggle_click ? (key_state == 1 ? !state.key_pressed : state.key_pressed) : key_state;
         }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
@@ -221,11 +221,11 @@ int main(int argc, char *argv[]) {
             (current_time.tv_nsec - last_click_time.tv_nsec);
 
         if (state.key_pressed && time_since_last_click >= state.click_interval_ns) {
-            send_click(&state, button_to_press);
+            send_click(&state, button_type);
             last_click_time = current_time;
         }
 
-        if (!nosleep)
+        if (!no_sleep)
             nanosleep(&SLEEP_TIME, NULL);
     }
 
