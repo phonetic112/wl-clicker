@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/input.h>
+#include <linux/prctl.h>
+#include <sys/prctl.h>
 #include <time.h>
 #include <unistd.h>
 #include "./build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
@@ -123,7 +125,8 @@ static const char usage[] =
     "                          (0 for left, 1 for right, 2 for middle)\n"
     "  -t, --toggle            Toggle the autoclicker on keypress\n"
     "  -h, --help              Show this menu\n"
-    "  -n, --nosleep           Disables sleeping in the main loop for faster clicks.\n"
+    "  -n, --nosleep           Disables sleeping in the main loop\n"
+    "                          to click as fast as possible.\n"
     "                          Note this will increase CPU usage massively.\n"
     "\n";
 
@@ -163,9 +166,14 @@ int main(int argc, char *argv[]) {
     if (optind < argc)
         clicks_per_second = abs(atoi(argv[optind]));
 
+    if (prctl(PR_SET_TIMERSLACK, 1) == -1) {
+        perror("prctl");
+        exit(EXIT_FAILURE);
+    }
+
     struct ClientState state = {0};
 
-    state.click_interval_ns = 1e9 / clicks_per_second;
+    state.click_interval_ns = (1e9 / clicks_per_second) - 10000 /* ??? */;
 
     const char *KBD_DEVICE = get_keyboard_device();
     if (!KBD_DEVICE) {
@@ -200,32 +208,22 @@ int main(int argc, char *argv[]) {
     int flags = fcntl(kbd_fd, F_GETFL, 0);
     fcntl(kbd_fd, F_SETFL, flags | O_NONBLOCK);
 
-    struct timespec last_click_time, current_time;
     const struct timespec SLEEP_TIME = {state.click_interval_ns / 1e9, state.click_interval_ns};
-    clock_gettime(CLOCK_MONOTONIC, &last_click_time);
 
     printf("Ready\n");
 
     while (1) {
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        double time_since_last_click =
-            (current_time.tv_sec - last_click_time.tv_sec) * 1e9 +
-            (current_time.tv_nsec - last_click_time.tv_nsec);
-
         int key_state = handle_keyboard_input(kbd_fd);
         if (key_state != -1) {
-            state.key_pressed = toggle_click ? (key_state == 1 ? !state.key_pressed : state.key_pressed) : key_state;
+            if (toggle_click) {
+                if (key_state == 1)
+                    state.key_pressed = !state.key_pressed;
+            } else
+                state.key_pressed = key_state;
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        time_since_last_click =
-            (current_time.tv_sec - last_click_time.tv_sec) * 1e9 +
-            (current_time.tv_nsec - last_click_time.tv_nsec);
-
-        if (state.key_pressed && time_since_last_click >= state.click_interval_ns) {
+        if (state.key_pressed)
             send_click(&state, button_type);
-            last_click_time = current_time;
-        }
 
         if (!no_sleep)
             nanosleep(&SLEEP_TIME, NULL);
