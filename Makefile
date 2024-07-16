@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lwayland-client -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE -mshstk
+CFLAGS = -lwayland-client -D_POSIX_C_SOURCE=200809L -mshstk
 LDFLAGS = -Wl,-z,relro,-z,now -Wl,-z,shstk
 BINARY = ./build/wl-clicker
 SOURCES = ./main.c ./build/wlr-virtual-pointer-unstable-v1-protocol.c
