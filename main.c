@@ -10,7 +10,7 @@
 #include <sys/prctl.h>
 #include <time.h>
 #include <unistd.h>
-#include "./build/wlr-virtual-pointer-unstable-v1-client-protocol.h"
+#include "./build/wlr-virtual-pointer.h"
 
 struct ClientState {
     struct wl_display *display;
