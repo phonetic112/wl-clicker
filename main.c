@@ -1,33 +1,33 @@
+#include "./build/wlr-virtual-pointer.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
-#include <string.h>
+#include <linux/input.h>
+#include <linux/prctl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <linux/input.h>
-#include <linux/prctl.h>
+#include <string.h>
 #include <sys/prctl.h>
 #include <time.h>
 #include <unistd.h>
-#include "./build/wlr-virtual-pointer.h"
 
 struct ClientState {
-    struct wl_display *display;
-    struct wl_registry *registry;
-    struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
-    struct zwlr_virtual_pointer_v1 *virtual_pointer;
-    int click_interval_ns;
-    bool key_pressed;
+    struct wl_display*                      display;
+    struct wl_registry*                     registry;
+    struct zwlr_virtual_pointer_manager_v1* pointer_manager;
+    struct zwlr_virtual_pointer_v1*         virtual_pointer;
+    int                                     click_interval_ns;
+    bool                                    key_pressed;
 };
 
 static int handle_keyboard_input(int fd) {
     struct input_event ev;
-    ssize_t n = read(fd, &ev, sizeof(ev));
+    ssize_t            n = read(fd, &ev, sizeof(ev));
 
     if (n == sizeof(ev)) {
         if (ev.type == EV_KEY && ev.code == KEY_F8)
-            return ev.value;  // 1 for press, 0 for release
+            return ev.value; // 1 for press, 0 for release
     } else if (n == -1 && errno != EAGAIN)
         perror("read");
 
@@ -35,8 +35,8 @@ static int handle_keyboard_input(int fd) {
 }
 
 static const char* get_keyboard_device() {
-    FILE* fp;
-    char line[256];
+    FILE*       fp;
+    char        line[256];
     static char device_file[20];
 
     fp = fopen("/proc/bus/input/devices", "r");
@@ -60,9 +60,9 @@ static const char* get_keyboard_device() {
     return NULL;
 }
 
-static void registry_global(void *data, struct wl_registry *registry,
-        uint32_t name, const char *interface, uint32_t version) {
-    struct ClientState *state = data;
+static void registry_global(void* data, struct wl_registry* registry, uint32_t name,
+                            const char* interface, uint32_t version) {
+    struct ClientState* state = data;
 
     if (strcmp(interface, zwlr_virtual_pointer_manager_v1_interface.name) == 0) {
         state->pointer_manager =
@@ -70,7 +70,7 @@ static void registry_global(void *data, struct wl_registry *registry,
     }
 }
 
-static void registry_global_remove(void *data, struct wl_registry *registry, uint32_t name) {}
+static void registry_global_remove(void* data, struct wl_registry* registry, uint32_t name) {}
 
 static const struct wl_registry_listener registry_listener = {
     .global = registry_global,
@@ -84,39 +84,37 @@ static int timestamp() {
     return ms;
 }
 
-static void send_click(struct ClientState *state, int button) {
+static void send_click(struct ClientState* state, int button) {
     switch (button) {
-        case 0:
-            button = BTN_LEFT;
-            break;
-        case 1:
-            button = BTN_RIGHT;
-            break;
-        case 2:
-            button = BTN_MIDDLE;
-            break;
-        default:
-            button = BTN_LEFT;
-            break;
+    case 0:
+        button = BTN_LEFT;
+        break;
+    case 1:
+        button = BTN_RIGHT;
+        break;
+    case 2:
+        button = BTN_MIDDLE;
+        break;
+    default:
+        button = BTN_LEFT;
+        break;
     }
-    zwlr_virtual_pointer_v1_button(
-        state->virtual_pointer, timestamp(), button, WL_POINTER_BUTTON_STATE_PRESSED);
+    zwlr_virtual_pointer_v1_button(state->virtual_pointer, timestamp(), button,
+                                   WL_POINTER_BUTTON_STATE_PRESSED);
     zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
     wl_display_flush(state->display);
 
-    zwlr_virtual_pointer_v1_button(
-        state->virtual_pointer, timestamp(), button, WL_POINTER_BUTTON_STATE_RELEASED);
+    zwlr_virtual_pointer_v1_button(state->virtual_pointer, timestamp(), button,
+                                   WL_POINTER_BUTTON_STATE_RELEASED);
     zwlr_virtual_pointer_v1_frame(state->virtual_pointer);
     wl_display_flush(state->display);
 }
 
-static const struct option long_options[] = {
-    {"toggle", no_argument, NULL, 't'},
-    {"help", no_argument, NULL, 'h'},
-    {"button", required_argument, NULL, 'b'},
-    {"nosleep", no_argument, NULL, 'n'},
-    {0, 0, 0, 0}
-};
+static const struct option long_options[] = {{"toggle", no_argument, NULL, 't'},
+                                             {"help", no_argument, NULL, 'h'},
+                                             {"button", required_argument, NULL, 'b'},
+                                             {"nosleep", no_argument, NULL, 'n'},
+                                             {0, 0, 0, 0}};
 
 static const char usage[] =
     "Usage: wl-clicker [clicks-per-second] [options]\n"
@@ -130,11 +128,11 @@ static const char usage[] =
     "                          Note this will increase CPU usage massively.\n"
     "\n";
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     unsigned int clicks_per_second = 1;
-    int button_type = 0;
-    bool toggle_click = false;
-    bool no_sleep = false;
+    int          button_type = 0;
+    bool         toggle_click = false;
+    bool         no_sleep = false;
 
     int c;
     while (1) {
@@ -143,23 +141,23 @@ int main(int argc, char *argv[]) {
         if (c == -1)
             break;
         switch (c) {
-            case 'h': // help
-                printf("%s", usage);
-                exit(EXIT_SUCCESS);
-                break;
-            case 't': // toggle
-                toggle_click = true;
-                break;
-            case 'b': // button
-                button_type = atoi(optarg);
-                break;
-            case 'n': // nosleep
-                no_sleep = true;
-                break;
-            default:
-                fprintf(stderr, "%s", usage);
-                exit(EXIT_FAILURE);
-                break;
+        case 'h': // help
+            printf("%s", usage);
+            exit(EXIT_SUCCESS);
+            break;
+        case 't': // toggle
+            toggle_click = true;
+            break;
+        case 'b': // button
+            button_type = atoi(optarg);
+            break;
+        case 'n': // nosleep
+            no_sleep = true;
+            break;
+        default:
+            fprintf(stderr, "%s", usage);
+            exit(EXIT_FAILURE);
+            break;
         }
     }
 
@@ -175,7 +173,7 @@ int main(int argc, char *argv[]) {
 
     state.click_interval_ns = (1e9 / clicks_per_second) - 10000 /* ??? */;
 
-    const char *KBD_DEVICE = get_keyboard_device();
+    const char* KBD_DEVICE = get_keyboard_device();
     if (!KBD_DEVICE) {
         fprintf(stderr, "Error: failed to find keyboard device.\n");
         return 1;
