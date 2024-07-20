@@ -21,34 +21,34 @@ struct ClientState {
     bool                                    key_pressed;
 };
 
-static int handle_keyboard_input(int fd) {
+static int get_keyboard_input(int fd) {
     struct input_event ev;
     ssize_t            n = read(fd, &ev, sizeof(ev));
 
-    if (n == sizeof(ev)) {
-        if (ev.type == EV_KEY && ev.code == KEY_F8)
-            return ev.value; // 1 for press, 0 for release
-    } else if (n == -1 && errno != EAGAIN)
+    if (n == -1 && errno != EAGAIN) {
         perror("read");
+        return -1;
+    }
+
+    if (n == sizeof(ev) && ev.type == EV_KEY && ev.code == KEY_F8)
+        return ev.value; // 1 for press, 0 for release
 
     return -1;
 }
 
 static const char* get_keyboard_device() {
-    FILE*       fp;
-    char        line[256];
+    FILE*       fp = fopen("/proc/bus/input/devices", "r");
     static char device_file[20];
+    char        line[256];
 
-    fp = fopen("/proc/bus/input/devices", "r");
-    if (fp == NULL) {
+    if (!fp) {
         perror("Error opening /proc/bus/input/devices");
         return NULL;
     }
 
     while (fgets(line, sizeof(line), fp)) {
-        char* event = strstr(line, "sysrq") ? strstr(line, "event") : NULL;
-        if (event) {
-            snprintf(device_file, sizeof(device_file), "/dev/input/%s", event);
+        if (strstr(line, "sysrq")) {
+            snprintf(device_file, sizeof(device_file), "/dev/input/%s", strstr(line, "event"));
             device_file[strcspn(device_file, " ")] = '\0';
             fclose(fp);
             printf("Found keyboard device: %s\n", device_file);
@@ -211,12 +211,12 @@ int main(int argc, char* argv[]) {
     printf("Ready\n");
 
     while (1) {
-        int key_state = handle_keyboard_input(kbd_fd);
+        int key_state = get_keyboard_input(kbd_fd);
+
         if (key_state != -1) {
-            if (toggle_click) {
-                if (key_state == 1)
-                    state.key_pressed = !state.key_pressed;
-            } else
+            if (toggle_click && key_state == 1)
+                state.key_pressed = !state.key_pressed;
+            else if (!toggle_click)
                 state.key_pressed = key_state;
         }
 
