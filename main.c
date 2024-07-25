@@ -206,7 +206,17 @@ int main(int argc, char* argv[]) {
     int flags = fcntl(kbd_fd, F_GETFL, 0);
     fcntl(kbd_fd, F_SETFL, flags | O_NONBLOCK);
 
-    const struct timespec SLEEP_TIME = {state.click_interval_ns / 1e9, state.click_interval_ns};
+    struct timespec sleep_time;
+    struct timespec last_click_time = {0, 0};
+    struct timespec current_time;
+
+    if (state.click_interval_ns <= 1000000) {
+        sleep_time.tv_sec = 0;
+        sleep_time.tv_nsec = state.click_interval_ns;
+    } else {
+        sleep_time.tv_sec = 0;
+        sleep_time.tv_nsec = 1000000;
+    }
 
     printf("Ready\n");
 
@@ -220,11 +230,20 @@ int main(int argc, char* argv[]) {
                 state.key_pressed = key_state;
         }
 
-        if (state.key_pressed)
-            send_click(&state, button_type);
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+
+        if (state.key_pressed) {
+            long long elapsed_ns = (current_time.tv_sec - last_click_time.tv_sec) * 1e9 +
+                                   (current_time.tv_nsec - last_click_time.tv_nsec);
+
+            if (elapsed_ns >= state.click_interval_ns) {
+                send_click(&state, button_type);
+                last_click_time = current_time;
+            }
+        }
 
         if (!no_sleep)
-            nanosleep(&SLEEP_TIME, NULL);
+            nanosleep(&sleep_time, NULL);
     }
 
     close(kbd_fd);
